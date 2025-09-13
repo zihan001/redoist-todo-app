@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports: ["27017:27017"]
+    volumes:
+      - mongo_data:/data/db
+
+  server:
+    working_dir: /app/server
+    image: node:22-alpine
+    depends_on: [mongo]
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      MONGO_URI: mongodb://mongo:27017/todo
+      JWT_SECRET: devsecretchangeme
+    ports: ["8080:8080"]
+    volumes:
+      - ./server:/app/server
+    command: sh -c "npm ci && npm run dev"
+
+  client:
+    working_dir: /app/client
+    image: node:22-alpine
+    environment:
+      NODE_ENV: development
+    ports: ["5173:5173"]
+    volumes:
+      - ./client:/app/client
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0"
+
+volumes:
+  mongo_data:
