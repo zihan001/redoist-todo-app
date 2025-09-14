@@ -1,14 +1,25 @@
-import { Schema, model, Types } from "mongoose";
-const taskSchema = new Schema({
-  user_id: { type: Types.ObjectId, ref: "User", index: true, required: true },
-  project_id: { type: Types.ObjectId, ref: "Project", index: true },
-  title: { type: String, required: true, index: true },
-  description: String,
-  priority: { type: String, enum: ["low","normal","high"], default: "normal" },
-  due_date: Date,
-  completed_at: Date,
-}, { timestamps: true });
+// src/models/Task.ts
+import mongoose, { Schema, type InferSchemaType } from "mongoose";
 
-taskSchema.index({ user_id: 1, project_id: 1, due_date: 1, completed_at: 1 });
+const TaskSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: "User", index: true, required: true },
+  projectId: { type: Schema.Types.ObjectId, ref: "Project", index: true, required: true },
+  title: { type: String, required: true, trim: true },
+  notes: { type: String, default: "" },
+  dueDate: { type: Date, default: null },
+  priority: { type: Number, enum: [1,2,3], default: 2, index: true },
+  completedAt: { type: Date, default: null, index: true },
+  createdAt: { type: Date, default: () => new Date() },
+  updatedAt: { type: Date, default: () => new Date() },
+}, { minimize: false });
 
-export default model("Task", taskSchema);
+TaskSchema.index({ userId: 1, completedAt: 1, dueDate: 1 });
+TaskSchema.index({ userId: 1, priority: -1, dueDate: 1 });
+
+TaskSchema.pre("save", function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+export type TaskDoc = InferSchemaType<typeof TaskSchema>;
+export const Task = mongoose.model<TaskDoc>("Task", TaskSchema);

@@ -23,7 +23,7 @@ router.get("/", async (req, res) => {
   const uid = (req as any).auth.uid as string;
   const includeArchived = req.query.includeArchived === "true";
   const projects = await Project.find({
-    user_id: new Types.ObjectId(uid),
+    userId: new Types.ObjectId(uid),
     ...(includeArchived ? {} : { archived: false }),
   }).sort({ createdAt: 1 });
   res.json(projects);
@@ -34,7 +34,7 @@ router.post("/", async (req, res) => {
   const uid = (req as any).auth.uid as string;
   const body = createProjectSchema.parse(req.body);
   const project = await Project.create({
-    user_id: new Types.ObjectId(uid),
+    userId: new Types.ObjectId(uid),
     name: body.name,
     color: body.color ?? "#64748b",
   });
@@ -48,7 +48,7 @@ router.patch("/:id", async (req, res) => {
   const body = updateProjectSchema.parse(req.body);
 
   const project = await Project.findOneAndUpdate(
-    { _id: id, user_id: uid },
+    { _id: id, userId: uid },
     { $set: body },
     { new: true }
   );
@@ -60,7 +60,7 @@ router.patch("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const uid = (req as any).auth.uid as string;
   const { id } = req.params;
-  const result = await Project.deleteOne({ _id: id, user_id: uid });
+  const result = await Project.deleteOne({ _id: id, userId: uid });
   if (result.deletedCount === 0) return res.status(404).json({ error: "Not found" });
   res.status(204).end();
 });
