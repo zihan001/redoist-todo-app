@@ -19,6 +19,21 @@ const updateProjectSchema = z.object({
 router.use(requireAuth);
 
 // list my projects (optionally include archived)
+/**
+ * @openapi
+ * /api/projects:
+ *   get:
+ *     summary: List projects for the current user
+ *     parameters:
+ *       - in: query
+ *         name: includeArchived
+ *         schema:
+ *           type: boolean
+ *         description: Include archived projects
+ *     responses:
+ *       200:
+ *         description: Array of projects
+ */
 router.get("/", async (req, res) => {
   const uid = (req as any).auth.uid as string;
   const includeArchived = req.query.includeArchived === "true";
@@ -30,6 +45,28 @@ router.get("/", async (req, res) => {
 });
 
 // create
+/**
+ * @openapi
+ * /api/projects:
+ *   post:
+ *     summary: Create a project
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *               color:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Created project
+ */
 router.post("/", async (req, res) => {
   const uid = (req as any).auth.uid as string;
   const body = createProjectSchema.parse(req.body);
@@ -42,6 +79,29 @@ router.post("/", async (req, res) => {
 });
 
 // update
+/**
+ * @openapi
+ * /api/projects/{id}:
+ *   patch:
+ *     summary: Update a project
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Updated project
+ *       404:
+ *         description: Not found
+ */
 router.patch("/:id", async (req, res) => {
   const uid = (req as any).auth.uid as string;
   const { id } = req.params;
@@ -57,6 +117,23 @@ router.patch("/:id", async (req, res) => {
 });
 
 // delete (hard delete for now; could soft-delete via archived=true)
+/**
+ * @openapi
+ * /api/projects/{id}:
+ *   delete:
+ *     summary: Delete a project
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Project deleted
+ *       404:
+ *         description: Not found
+ */
 router.delete("/:id", async (req, res) => {
   const uid = (req as any).auth.uid as string;
   const { id } = req.params;

@@ -33,6 +33,44 @@ const listQuery = z.object({
 });
 
 // ---------- list ----------
+/**
+ * @openapi
+ * /api/tasks:
+ *   get:
+ *     summary: List tasks
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: completed
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Paginated tasks
+ */
 router.get("/", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const { projectId, completed, filter, priority, q, page, pageSize } = listQuery.parse(req.query);
@@ -87,6 +125,37 @@ router.get("/", async (req, res) => {
 });
 
 // ---------- create ----------
+/**
+ * @openapi
+ * /api/tasks:
+ *   post:
+ *     summary: Create a task
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *             properties:
+ *               title:
+ *                 type: string
+ *               notes:
+ *                 type: string
+ *               projectId:
+ *                 type: string
+ *               priority:
+ *                 type: integer
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       201:
+ *         description: Created task
+ *       400:
+ *         description: Invalid projectId
+ */
 router.post("/", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const body = createTaskSchema.parse(req.body);
@@ -108,6 +177,25 @@ router.post("/", async (req, res) => {
 });
 
 // ---------- get single task ----------
+/**
+ * @openapi
+ * /api/tasks/{id}:
+ *   get:
+ *     summary: Get a task by id
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task data
+ *       400:
+ *         description: Bad id
+ *       404:
+ *         description: Not found
+ */
 router.get("/:id", async (req, res) => {
   try {
     const userId = (req as any).auth.uid as string;
@@ -124,6 +212,31 @@ router.get("/:id", async (req, res) => {
 });
 
 // ---------- update ----------
+/**
+ * @openapi
+ * /api/tasks/{id}:
+ *   patch:
+ *     summary: Update a task
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Updated task
+ *       400:
+ *         description: Bad id or invalid projectId
+ *       404:
+ *         description: Not found
+ */
 router.patch("/:id", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const { id } = req.params;
@@ -151,6 +264,23 @@ router.patch("/:id", async (req, res) => {
 });
 
 // ---------- complete / incomplete ----------
+/**
+ * @openapi
+ * /api/tasks/{id}/complete:
+ *   post:
+ *     summary: Mark a task as complete
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Completed task
+ *       404:
+ *         description: Not found
+ */
 router.post("/:id/complete", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const task = await Task.findOneAndUpdate(
@@ -162,6 +292,23 @@ router.post("/:id/complete", async (req, res) => {
   res.json(task);
 });
 
+/**
+ * @openapi
+ * /api/tasks/{id}/incomplete:
+ *   post:
+ *     summary: Mark a task as incomplete
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Updated task
+ *       404:
+ *         description: Not found
+ */
 router.post("/:id/incomplete", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const task = await Task.findOneAndUpdate(
@@ -174,6 +321,23 @@ router.post("/:id/incomplete", async (req, res) => {
 });
 
 // ---------- delete ----------
+/**
+ * @openapi
+ * /api/tasks/{id}:
+ *   delete:
+ *     summary: Delete a task
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Task deleted
+ *       404:
+ *         description: Not found
+ */
 router.delete("/:id", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const result = await Task.deleteOne({ _id: req.params.id, userId: new Types.ObjectId(userId) });

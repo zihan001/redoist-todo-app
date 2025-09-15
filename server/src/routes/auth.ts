@@ -7,6 +7,31 @@ import User from "../models/User.js";
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET!;
 
+/**
+ * @openapi
+ * /api/auth/signup:
+ *   post:
+ *     summary: Register a new user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User created successfully
+ *       400:
+ *         description: Email already exists
+ */
 router.post("/signup", async (req, res) => {
   const { email, password } = req.body;
   const password_hash = await bcrypt.hash(password, 10);
@@ -19,6 +44,31 @@ router.post("/signup", async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/auth/login:
+ *   post:
+ *     summary: Authenticate a user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       401:
+ *         description: Invalid credentials
+ */
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -29,10 +79,32 @@ router.post("/login", async (req, res) => {
   res.cookie("token", token, { httpOnly: true, sameSite: "lax" }).json({ ok: true });
 });
 
+/**
+ * @openapi
+ * /api/auth/logout:
+ *   post:
+ *     summary: Log out the current user
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ */
 router.post("/logout", (_req, res) => {
   res.clearCookie("token").json({ ok: true });
 });
 
+/**
+ * @openapi
+ * /api/auth/me:
+ *   get:
+ *     summary: Get the current user's profile
+ *     responses:
+ *       200:
+ *         description: User profile
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ */
 router.get("/me", requireAuth, async (req, res) => {
   const uid = (req as any).auth.uid as string;
   const user = await User.findById(uid).select("_id email createdAt");

@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import mongoose from "mongoose";
 import { fileURLToPath } from "url";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./swagger.js";
 
 const app = express();
 app.use(morgan("dev"));
@@ -28,6 +30,7 @@ import taskRoutes from "./routes/task.js";
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Static client ---
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
