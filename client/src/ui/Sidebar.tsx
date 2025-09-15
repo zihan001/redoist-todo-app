@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createProject, listProjects } from "../api/projects";
-import type { Project } from "../api/projects";
 import { useState } from "react";
 import TaskList from "./TaskList";
+import { useSearchParams } from "react-router-dom";
 
 export default function Sidebar() {
   const qc = useQueryClient();
@@ -14,18 +14,36 @@ export default function Sidebar() {
     onSuccess: () => { setName(""); qc.invalidateQueries({ queryKey: ["projects"] }); },
   });
 
-  const [selected, setSelected] = useState<Project | null>(null);
+  const [sp, setSp] = useSearchParams();
+
+  const selectProject = (projectId?: string) => {
+    const next = new URLSearchParams(sp);
+    if (projectId) next.set("projectId", projectId);
+    else next.delete("projectId");
+    setSp(next, { replace: true });
+  };
+
+  const selectedId = sp.get("projectId");
 
   return (
     <div className="p-3 space-y-4">
       <div>
         <h2 className="text-sm text-gray-500 mb-2">Projects</h2>
         <ul className="space-y-1">
+          <li>
+            <button
+              onClick={()=>selectProject(undefined)}
+              className={`w-full text-left px-2 py-1 rounded hover:bg-gray-100 ${!selectedId ? "bg-gray-100 font-medium" : ""}`}
+            >
+              <span className="inline-block w-2 h-2 rounded-full mr-2 align-middle" style={{ background: "#64748b" }} />
+              Inbox
+            </button>
+          </li>
           {projects?.map(p => (
             <li key={p._id}>
               <button
-                onClick={()=>setSelected(p)}
-                className={`w-full text-left px-2 py-1 rounded hover:bg-gray-100 ${selected?._id===p._id ? "bg-gray-100 font-medium" : ""}`}
+                onClick={()=>selectProject(p._id)}
+                className={`w-full text-left px-2 py-1 rounded hover:bg-gray-100 ${selectedId===p._id ? "bg-gray-100 font-medium" : ""}`}
               >
                 <span className="inline-block w-2 h-2 rounded-full mr-2 align-middle" style={{ background: p.color ?? "#64748b" }} />
                 {p.name}
@@ -43,7 +61,7 @@ export default function Sidebar() {
       </form>
 
       <div className="border-t pt-3">
-        <TaskList projectId={selected?._id} />
+        <TaskList projectId={selectedId ?? undefined} />
       </div>
     </div>
   );

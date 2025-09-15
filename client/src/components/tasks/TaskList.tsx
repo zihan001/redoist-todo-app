@@ -1,5 +1,4 @@
 // src/components/tasks/TaskList.tsx
-import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTasks } from "../../hooks/useTasks";
 import TaskDetailPanel from "./TaskDetailPanel";

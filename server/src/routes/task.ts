@@ -25,7 +25,7 @@ const updateTaskSchema = createTaskSchema
 const listQuery = z.object({
   projectId: z.string().optional(),
   completed: z.enum(["true", "false"]).optional(), // legacy flag
-  filter: z.enum(["today", "upcoming", "completed"]).optional(),
+  filter: z.enum(["today", "upcoming", "past", "completed"]).optional(),
   priority: z.enum([ "1", "2", "3" ]).transform(n => Number(n) as 1|2|3).optional(),
   q: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
@@ -60,6 +60,10 @@ router.get("/", async (req, res) => {
         { dueDate: { $gt: end } },
         { dueDate: null }, // treat no-due-date as upcoming
       ];
+    }
+    if (filter === "past") {
+      where.completedAt = null;
+      where.dueDate = { $lt: start };
     }
   }
 
@@ -105,13 +109,18 @@ router.post("/", async (req, res) => {
 
 // ---------- get single task ----------
 router.get("/:id", async (req, res) => {
-  const userId = (req as any).auth.uid as string;
-  const { id } = req.params;
-  if (!Types.ObjectId.isValid(id)) return res.status(400).json({ error: "Bad id" });
+  try {
+    const userId = (req as any).auth.uid as string;
+    const { id } = req.params;
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ error: "Bad id" });
 
-  const task = await Task.findOne({ _id: id, userId: new Types.ObjectId(userId) });
-  if (!task) return res.status(404).json({ error: "Not found" });
-  res.json(task);
+    const task = await Task.findOne({ _id: id, userId: new Types.ObjectId(userId) });
+    if (!task) return res.status(404).json({ error: "Not found" });
+    res.json(task);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // ---------- update ----------

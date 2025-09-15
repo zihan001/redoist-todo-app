@@ -1,62 +1,64 @@
-// src/components/tasks/TaskDetailPanel.tsx
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTask, updateTask } from "../../api/tasks";
 
 function useTask(taskId: string) {
   return useQuery({
     queryKey: ["task", taskId],
-    queryFn: async () => {
-      const r = await fetch(`/api/tasks?filter=completed&q=&page=1&pageSize=1&id=${taskId}`);
-      // optional: add GET /api/tasks/:id in backend; for brevity, assume:
-      const rr = await fetch(`/api/tasks/${taskId}`); // if you add this route
-      if (!rr.ok) throw new Error("not found");
-      return rr.json();
-    }
+    queryFn: () => getTask(taskId)
   });
 }
 
 export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onClose:()=>void}) {
   const qc = useQueryClient();
-  const { data, isLoading } = useTask(taskId);
+  const { data, isLoading, error: fetchError } = useTask(taskId);
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
-  const [priority, setPriority] = useState<1|2|3>(2);
+  const [priority, setPriority] = useState<string>("2");
 
   useEffect(() => {
     if (data) {
       setTitle(data.title ?? "");
       setNotes(data.notes ?? "");
       setDueDate(data.dueDate ? data.dueDate.slice(0,10) : null);
-      setPriority(data.priority ?? 2);
+      setPriority(String(data.priority) ?? "2");
     }
   }, [data]);
 
   const patch = useMutation({
     mutationFn: async (body: any) => {
-      const r = await fetch(`/api/tasks/${taskId}`, {
-        method: "PATCH",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) throw new Error("patch failed");
-      return r.json();
+      return updateTask(taskId, body);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tasks"]});
       qc.invalidateQueries({ queryKey: ["task", taskId]});
+    },
+    onError: (error) => {
+      console.error("Failed to update task:", error);
     }
   });
 
   // simple debounce
   useEffect(() => {
     const h = setTimeout(() => {
-      patch.mutate({ title, notes, dueDate: dueDate ? new Date(dueDate).toISOString() : null, priority });
+      patch.mutate({ 
+        title, 
+        notes, 
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null, 
+        priority: priority
+      });
     }, 500);
     return () => clearTimeout(h);
   }, [title, notes, dueDate, priority]);
 
   if (isLoading) return <div className="rounded-xl border bg-white p-4">Loading…</div>;
+
+  if (fetchError) return (
+    <div className="rounded-xl border bg-white p-4 text-red-600">
+      Error loading task: {(fetchError as Error).message || "Unknown error"}
+    </div>
+  );
 
   return (
     <div className="rounded-xl border bg-white overflow-hidden">
@@ -92,12 +94,12 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
             <label className="text-xs text-gray-500">Priority</label>
             <select
               value={priority}
-              onChange={e=>setPriority(Number(e.target.value) as 1|2|3)}
+              onChange={e=>setPriority(e.target.value)}
               className="rounded border px-2 py-1 text-sm"
             >
-              <option value={3}>High</option>
-              <option value={2}>Medium</option>
-              <option value={1}>Low</option>
+              <option value={"3"}>High</option>
+              <option value={"2"}>Medium</option>
+              <option value={"1"}>Low</option>
             </select>
           </div>
         </div>

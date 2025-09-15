@@ -9,7 +9,7 @@ export default function AppLayout() {
     <div className="min-h-screen grid grid-cols-[280px_1fr]">
       <aside className="border-r">
         <div className="p-3 flex items-center justify-between">
-          <h1 className="font-semibold">Redoist</h1>
+          <h1 className="font-semibold">redoist</h1>
           <button
             onClick={async ()=>{ await logout(); nav("/login", { replace: true }); }}
             className="text-sm text-gray-600 hover:text-black"

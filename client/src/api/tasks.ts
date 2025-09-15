@@ -5,7 +5,7 @@ export type Task = {
     title: string;
     notes?: string;
     projectId?: string;
-    priority: 1|2|3;
+    priority: 1 | 2 | 3;
     dueDate?: string | null;
     completedAt?: string | null;
     createdAt: string;
@@ -19,10 +19,19 @@ export type TasksResponse = {
     pageSize: number;
 };
 
-export const listTasks = (opts: { projectId?: string; completedAt?: boolean } = {}) => {
+export const listTasks = (opts: { 
+    projectId?: string; 
+    completedAt?: boolean;
+    filter?: string;
+    priority?: number;
+    q?: string; 
+} = {}) => {
     const params = new URLSearchParams();
     if (opts.projectId) params.set("projectId", opts.projectId);
     if (typeof opts.completedAt === "boolean") params.set("completedAt", String(opts.completedAt));
+    if (opts.filter) params.set("filter", opts.filter);
+    if (opts.priority) params.set("priority", String(opts.priority));
+    if (opts.q) params.set("q", opts.q);
     return api<TasksResponse>(`/api/tasks?${params}`);
 };
 
@@ -45,3 +54,6 @@ export const uncompleteTask = (id: string) =>
 
 export const deleteTask = (id: string) =>
     api<void>(`/api/tasks/${id}`, { method: "DELETE" });
+
+export const getTask = (id: string) => 
+    api<Task>(`/api/tasks/${id}`);
