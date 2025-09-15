@@ -1,3 +1,4 @@
+// server/src/routes/task.ts
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { Task } from "../models/Task.js";
@@ -5,6 +6,13 @@ import Project from "../models/Project.js";
 import { z } from "zod";
 import { Types } from "mongoose";
 import { DateTime } from "luxon";
+
+/**
+ * @swagger
+ * tags:
+ *   name: Tasks
+ *   description: Task management API
+ */
 
 const router = Router();
 router.use(requireAuth);
@@ -32,8 +40,76 @@ const listQuery = z.object({
   pageSize: z.coerce.number().min(1).max(200).default(100),
 });
 
-// ---------- list ----------
+/**
+ * @swagger
+ * /tasks:
+ *   get:
+ *     summary: Get a list of tasks
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *         description: Filter tasks by project ID
+ *       - in: query
+ *         name: completed
+ *         schema:
+ *           type: string
+ *           enum: [true, false]
+ *         description: Filter tasks by completion status
+ *       - in: query
+ *         name: filter
+ *         schema:
+ *           type: string
+ *           enum: [today, upcoming, past, completed]
+ *         description: Apply a quick filter
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: integer
+ *           enum: [1, 2, 3]
+ *         description: Filter tasks by priority
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search tasks by title or notes
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 100
+ *         description: Number of tasks per page
+ *     responses:
+ *       200:
+ *         description: List of tasks
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *                 total:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 pageSize:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ */
 router.get("/", async (req, res) => {
+  // Fetch tasks based on query parameters
   const userId = (req as any).auth.uid as string;
   const { projectId, completed, filter, priority, q, page, pageSize } = listQuery.parse(req.query);
 
@@ -86,16 +162,55 @@ router.get("/", async (req, res) => {
   res.json({ items, total, page, pageSize });
 });
 
-// ---------- create ----------
+/**
+ * @swagger
+ * /tasks:
+ *   post:
+ *     summary: Create a new task
+ *     tags: [Tasks]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Title of the task
+ *               notes:
+ *                 type: string
+ *                 description: Additional notes for the task
+ *               projectId:
+ *                 type: string
+ *                 description: ID of the project the task belongs to
+ *               priority:
+ *                 type: integer
+ *                 enum: [1, 2, 3]
+ *                 description: Priority of the task
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Due date of the task
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *       400:
+ *         description: Validation error or invalid project ID
+ */
 router.post("/", async (req, res) => {
   const userId = (req as any).auth.uid as string;
+
+  // Validate the request body
   const body = createTaskSchema.parse(req.body);
 
+  // Check if the project ID is valid and belongs to the user
   if (body.projectId) {
     const ok = await Project.exists({ _id: body.projectId, userId, archived: false });
     if (!ok) return res.status(400).json({ error: "Invalid projectId" });
   }
 
+  // Create a new task
   const task = await Task.create({
     userId: new Types.ObjectId(userId),
     projectId: body.projectId ? new Types.ObjectId(body.projectId) : undefined,
@@ -104,18 +219,41 @@ router.post("/", async (req, res) => {
     priority: body.priority ?? 2,
     dueDate: body.dueDate,
   });
+
   res.status(201).json(task);
 });
 
-// ---------- get single task ----------
+/**
+ * @swagger
+ * /tasks/{id}:
+ *   get:
+ *     summary: Get a single task by ID
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the task to retrieve
+ *     responses:
+ *       200:
+ *         description: Task retrieved successfully
+ *       404:
+ *         description: Task not found
+ */
 router.get("/:id", async (req, res) => {
   try {
     const userId = (req as any).auth.uid as string;
     const { id } = req.params;
+
+    // Validate the task ID
     if (!Types.ObjectId.isValid(id)) return res.status(400).json({ error: "Bad id" });
 
+    // Find the task by ID and user ID
     const task = await Task.findOne({ _id: id, userId: new Types.ObjectId(userId) });
     if (!task) return res.status(404).json({ error: "Not found" });
+
     res.json(task);
   } catch (err) {
     console.error(err);
@@ -123,19 +261,70 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// ---------- update ----------
+/**
+ * @swagger
+ * /tasks/{id}:
+ *   patch:
+ *     summary: Update an existing task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the task to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 description: Updated title of the task
+ *               notes:
+ *                 type: string
+ *                 description: Updated notes for the task
+ *               projectId:
+ *                 type: string
+ *                 description: Updated project ID for the task
+ *               priority:
+ *                 type: integer
+ *                 enum: [1, 2, 3]
+ *                 description: Updated priority of the task
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Updated due date of the task
+ *               completedAt:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Mark the task as completed
+ *     responses:
+ *       200:
+ *         description: Task updated successfully
+ *       404:
+ *         description: Task not found
+ */
 router.patch("/:id", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const { id } = req.params;
+
+  // Validate the task ID
   if (!Types.ObjectId.isValid(id)) return res.status(400).json({ error: "Bad id" });
 
+  // Validate the request body
   const body = updateTaskSchema.parse(req.body);
 
+  // Check if the project ID is valid and belongs to the user
   if (body.projectId) {
     const ok = await Project.exists({ _id: body.projectId, userId, archived: false });
     if (!ok) return res.status(400).json({ error: "Invalid projectId" });
   }
 
+  // Update the task
   const task = await Task.findOneAndUpdate(
     { _id: id, userId: new Types.ObjectId(userId) },
     {
@@ -146,11 +335,31 @@ router.patch("/:id", async (req, res) => {
     },
     { new: true }
   );
+
   if (!task) return res.status(404).json({ error: "Not found" });
+
   res.json(task);
 });
 
-// ---------- complete / incomplete ----------
+/**
+ * @swagger
+ * /tasks/{id}/complete:
+ *   post:
+ *     summary: Mark a task as complete
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the task to mark as complete
+ *     responses:
+ *       200:
+ *         description: Task marked as complete successfully
+ *       404:
+ *         description: Task not found
+ */
 router.post("/:id/complete", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const task = await Task.findOneAndUpdate(
@@ -162,6 +371,25 @@ router.post("/:id/complete", async (req, res) => {
   res.json(task);
 });
 
+/**
+ * @swagger
+ * /tasks/{id}/incomplete:
+ *   post:
+ *     summary: Mark a task as incomplete
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the task to mark as incomplete
+ *     responses:
+ *       200:
+ *         description: Task marked as incomplete successfully
+ *       404:
+ *         description: Task not found
+ */
 router.post("/:id/incomplete", async (req, res) => {
   const userId = (req as any).auth.uid as string;
   const task = await Task.findOneAndUpdate(
@@ -173,11 +401,33 @@ router.post("/:id/incomplete", async (req, res) => {
   res.json(task);
 });
 
-// ---------- delete ----------
+/**
+ * @swagger
+ * /tasks/{id}:
+ *   delete:
+ *     summary: Delete a task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the task to delete
+ *     responses:
+ *       204:
+ *         description: Task deleted successfully
+ *       404:
+ *         description: Task not found
+ */
 router.delete("/:id", async (req, res) => {
   const userId = (req as any).auth.uid as string;
+
+  // Delete the task
   const result = await Task.deleteOne({ _id: req.params.id, userId: new Types.ObjectId(userId) });
+
   if (result.deletedCount === 0) return res.status(404).json({ error: "Not found" });
+
   res.status(204).end();
 });
 

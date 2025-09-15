@@ -1,3 +1,4 @@
+// server/src/index.ts
 import express from "express";
 import path from "path";
 import cors from "cors";
@@ -5,6 +6,10 @@ import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import mongoose from "mongoose";
 import { fileURLToPath } from "url";
+
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import swaggerOptions from "./swagger.js";
 
 const app = express();
 app.use(morgan("dev"));
@@ -20,6 +25,10 @@ mongoose.connect(MONGO_URI).then(() => console.log("Mongo connected"));
 import "./models/User.js";
 import "./models/Project.js";
 import "./models/Task.js";
+
+// --- Swagger setup ---
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Routes ---
 import authRoutes from "./routes/auth.js";
