@@ -92,23 +92,28 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
       {/* Task detail form */}
       <div className="p-4 space-y-4">
         <input
+          id="task-title"
           value={title}
           onChange={e=>setTitle(e.target.value)}
           className="w-full rounded border px-3 py-2 text-sm"
           placeholder="Title"
+          aria-label="Title"
         />
         <textarea
+          id="task-notes"
           value={notes}
           onChange={e=>setNotes(e.target.value)}
           rows={6}
           className="w-full rounded border px-3 py-2 text-sm"
           placeholder="Notes"
+          aria-label="Notes"
         />
         <div className="grid grid-cols-2 gap-3">
           {/* Due date input */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Due date</label>
+            <label htmlFor="task-due-date" className="text-xs text-gray-500">Due date</label>
             <input
+              id="task-due-date"
               type="date"
               value={dueDate ?? ""}
               onChange={e=>setDueDate(e.target.value || null)}
@@ -117,8 +122,9 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
           </div>
           {/* Priority selector */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Priority</label>
+            <label htmlFor="task-priority" className="text-xs text-gray-500">Priority</label>
             <select
+              id="task-priority"
               value={priority}
               onChange={e=>setPriority(e.target.value)}
               className="rounded border px-2 py-1 text-sm"
