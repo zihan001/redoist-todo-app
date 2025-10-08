@@ -96,7 +96,11 @@ router.post("/", async (req, res) => {
   const uid = (req as any).auth.uid as string;
 
   // Validate the request body
-  const body = createProjectSchema.parse(req.body);
+  const parsed = createProjectSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "ValidationError", details: parsed.error.flatten() });
+  }
+  const body = parsed.data;
 
   // Create a new project
   const project = await Project.create({

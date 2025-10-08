@@ -54,7 +54,15 @@ router.post("/signup", async (req, res) => {
     const token = jwt.sign({ uid: user.id }, JWT_SECRET, { expiresIn: "7d" });
 
     // Set the token as an HTTP-only cookie and respond with success
-    res.cookie("token", token, { httpOnly: true, sameSite: "lax" }).json({ ok: true });
+    res.status(201)
+       .cookie("token", token, { httpOnly: true, sameSite: "lax" })
+       .json({ 
+         user: {
+           _id: user._id,
+           email: user.email,
+           createdAt: user.createdAt
+         }
+       });
   } catch (e) {
     res.status(400).json({ error: "Email already exists" });
   }

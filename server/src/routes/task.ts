@@ -202,7 +202,11 @@ router.post("/", async (req, res) => {
   const userId = (req as any).auth.uid as string;
 
   // Validate the request body
-  const body = createTaskSchema.parse(req.body);
+  const result = createTaskSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: "ValidationError", details: result.error.flatten() });
+  }
+  const body = result.data;
 
   // Check if the project ID is valid and belongs to the user
   if (body.projectId) {
