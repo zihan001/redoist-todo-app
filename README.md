@@ -1,5 +1,11 @@
 # redoist-todo-app
 
+## API Documentation
+
+The API documentation is available at `/api/docs` when the server is running. Open your browser and navigate to: 
+http://localhost:8080/api/docs
+This documentation provides details about all available endpoints, their parameters, and response formats.
+
 ## MVP (Release 1)
 ### Must-have features
 1. Auth
@@ -38,3 +44,4 @@ Non-functional MVP targets
 - Offline-first with optimistic UI (IndexedDB + background sync)
 - Collaboration: shared projects, task assignees, comments, activity log
 - Insights: streaks, completed-per-week, priorities distribution
+

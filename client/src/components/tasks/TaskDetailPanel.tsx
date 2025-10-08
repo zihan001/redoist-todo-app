@@ -1,7 +1,13 @@
+// client/src/components/tasks/TaskDetailPanel.tsx
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getTask, updateTask } from "../../api/tasks";
 
+/**
+ * Custom hook to fetch a single task by its ID.
+ * @param {string} taskId - The ID of the task to fetch.
+ * @returns {object} - React Query object containing task data, loading state, and error state.
+ */
 function useTask(taskId: string) {
   return useQuery({
     queryKey: ["task", taskId],
@@ -9,6 +15,17 @@ function useTask(taskId: string) {
   });
 }
 
+/**
+ * TaskDetailPanel Component
+ * 
+ * Displays the details of a specific task and allows the user to edit its properties.
+ * - Fetches task details using the `useTask` hook.
+ * - Updates task details using a debounced mutation.
+ * - Provides inputs for editing the task's title, notes, due date, and priority.
+ * 
+ * @param {string} taskId - The ID of the task to display.
+ * @param {function} onClose - Callback to close the task detail panel.
+ */
 export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onClose:()=>void}) {
   const qc = useQueryClient();
   const { data, isLoading, error: fetchError } = useTask(taskId);
@@ -17,6 +34,7 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [priority, setPriority] = useState<string>("2");
 
+  // Populate state with task data when it is fetched
   useEffect(() => {
     if (data) {
       setTitle(data.title ?? "");
@@ -26,6 +44,7 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
     }
   }, [data]);
 
+  // Mutation to update task details
   const patch = useMutation({
     mutationFn: async (body: any) => {
       return updateTask(taskId, body);
@@ -39,7 +58,7 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
     }
   });
 
-  // simple debounce
+  // Debounce updates to avoid excessive API calls
   useEffect(() => {
     const h = setTimeout(() => {
       patch.mutate({ 
@@ -52,8 +71,10 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
     return () => clearTimeout(h);
   }, [title, notes, dueDate, priority]);
 
+  // Show loading state while fetching task data
   if (isLoading) return <div className="rounded-xl border bg-white p-4">Loading…</div>;
 
+  // Show error message if task data fails to load
   if (fetchError) return (
     <div className="rounded-xl border bg-white p-4 text-red-600">
       Error loading task: {(fetchError as Error).message || "Unknown error"}
@@ -62,10 +83,13 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
 
   return (
     <div className="rounded-xl border bg-white overflow-hidden">
+      {/* Header with close button */}
       <div className="flex items-center justify-between p-3 border-b">
         <div className="text-sm font-semibold">Task details</div>
         <button className="text-sm text-gray-500 hover:text-gray-800" onClick={onClose}>Close</button>
       </div>
+
+      {/* Task detail form */}
       <div className="p-4 space-y-4">
         <input
           value={title}
@@ -81,6 +105,7 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
           placeholder="Notes"
         />
         <div className="grid grid-cols-2 gap-3">
+          {/* Due date input */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-500">Due date</label>
             <input
@@ -90,6 +115,7 @@ export default function TaskDetailPanel({ taskId, onClose }:{taskId:string; onCl
               className="rounded border px-2 py-1 text-sm"
             />
           </div>
+          {/* Priority selector */}
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-500">Priority</label>
             <select

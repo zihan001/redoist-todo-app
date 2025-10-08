@@ -1,3 +1,4 @@
+// client/src/pages/Signup.tsx
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";

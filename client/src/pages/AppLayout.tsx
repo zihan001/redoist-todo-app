@@ -1,3 +1,4 @@
+// client/src/pages/AppLayout.tsx
 import { Outlet, useNavigate, NavLink } from "react-router-dom";
 import Sidebar from "../ui/Sidebar";
 import { logout } from "../api/auth";
