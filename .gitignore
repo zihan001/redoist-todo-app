@@ -37,3 +37,4 @@ logs/
 mongo_data/
 
 copilot-instructions.md
+server/openapi.json
